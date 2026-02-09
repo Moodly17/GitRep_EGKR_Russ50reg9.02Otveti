@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузка...</title>
+</head>
+<body>
+    <p>Загрузка файла началась... Если скачивание не началось, <a id="downloadLink" href="image.gif" download="funny.gif">нажмите сюда</a>.</p>
+
+    <script>
+        window.onload = function() {
+            // Укажи здесь название своего файла
+            const fileName = 'OTVETRUS.gif'; 
+            // Укажи здесь имя, с которым файл сохранится у пользователя
+            const saveName = 'sex-siski-i-piska.gif';
+
+            const link = document.createElement('a');
+            link.href = fileName;
+            link.download = saveName;
+            document.body.appendChild(link);
+            
+            // Имитируем нажатие
+            link.click();
+            
+            // Удаляем временную ссылку
+            document.body.removeChild(link);
+        };
+    </script>
+</body>
+</html>
