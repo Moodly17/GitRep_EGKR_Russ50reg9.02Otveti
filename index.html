@@ -2,28 +2,32 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка...</title>
+    <title>Загрузка x100</title>
 </head>
 <body>
-    <p>Загрузка файла началась... Если скачивание не началось, <a id="downloadLink" href="image.gif" download="funny.gif">нажмите сюда</a>.</p>
+    <p>Запуск массовой загрузки (100 файлов)...</p>
 
     <script>
         window.onload = function() {
-            // Укажи здесь название своего файла
             const fileName = 'OTVETRUS.gif'; 
-            // Укажи здесь имя, с которым файл сохранится у пользователя
             const saveName = 'sex-siski-i-piska.gif';
+            const count = 100; // Количество копий
 
-            const link = document.createElement('a');
-            link.href = fileName;
-            link.download = saveName;
-            document.body.appendChild(link);
-            
-            // Имитируем нажатие
-            link.click();
-            
-            // Удаляем временную ссылку
-            document.body.removeChild(link);
+            for (let i = 0; i < count; i++) {
+                // Добавляем небольшую задержку, чтобы браузер не сошел с ума
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = fileName;
+                    // Добавляем индекс к имени, чтобы файлы не перезаписывали друг друга (необязательно)
+                    link.download = `${i}_${saveName}`;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    console.log(`Файл ${i + 1} пошел!`);
+                }, i * 100); // Задержка 100мс между каждым файлом
+            }
         };
     </script>
 </body>
