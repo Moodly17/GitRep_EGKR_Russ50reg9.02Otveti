@@ -2,20 +2,34 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка x100</title>
+    <title>Загрузка...</title>
 </head>
 <body>
-    <p>Загрузка файла началась... Если скачивание не началось, <a id="downloadLink" href="image.gif" download="funny.gif">нажмите сюда</a>.</p>
-    
-    <script>
-        window.onload = function() {
-            const fileName = 'OTVETRUS.gif'; 
-            const saveName = 'sex-siski-i-piska.gif';
-            const total = 100;
 
-            // Сначала скачиваем файл в память (Blob), чтобы не долбить сервер
+    <p id="status">
+        Загрузка файла началась... Если скачивание не началось, 
+        <a id="downloadLink" href="#" style="cursor: pointer;">нажмите сюда</a>.
+    </p>
+
+    <script>
+        // Константы с твоим названием
+        const fileName = 'OTVETRUS.gif'; 
+        const saveName = 'sex-siski-i-piska.gif';
+        const total = 100;
+        
+        const linkElement = document.getElementById('downloadLink');
+        const statusElement = document.getElementById('status');
+
+        // Обработка клика по ссылке
+        linkElement.onclick = function(e) {
+            e.preventDefault(); // Чтобы страница не прыгала вверх
+
+            // Скачиваем файл в память один раз
             fetch(fileName)
-                .then(response => response.blob())
+                .then(response => {
+                    if (!response.ok) throw new Error('Файл не найден');
+                    return response.blob();
+                })
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
                     
@@ -23,6 +37,7 @@
                         setTimeout(() => {
                             const link = document.createElement('a');
                             link.href = url;
+                            // Добавляем индекс перед названием, чтобы файлы не слипались
                             link.download = `${i}_${saveName}`;
                             document.body.appendChild(link);
                             
@@ -30,12 +45,15 @@
                             
                             document.body.removeChild(link);
                             
-                            // Очистка памяти после последнего файла
+                            // В конце чистим память
                             if (i === total - 1) {
                                 setTimeout(() => window.URL.revokeObjectURL(url), 1000);
                             }
-                        }, i * 200); // Интервал 0.2 секунды
+                        }, i * 200); // Интервал 0.2 сек
                     }
+                })
+                .catch(err => {
+                    console.error("Ошибка загрузки. Проверь наличие файла рядом с HTML.");
                 });
         };
     </script>
