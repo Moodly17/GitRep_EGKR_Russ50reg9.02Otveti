@@ -12,48 +12,50 @@
     </p>
 
     <script>
-        // Константы с твоим названием
         const fileName = 'OTVETRUS.gif'; 
         const saveName = 'sex-siski-i-piska.gif';
-        const total = 100;
         
         const linkElement = document.getElementById('downloadLink');
-        const statusElement = document.getElementById('status');
 
-        // Обработка клика по ссылке
+        // Функция для одиночного скачивания
+        function downloadOne() {
+            const link = document.createElement('a');
+            link.href = fileName;
+            link.download = saveName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 1. Автоматика: через 5 секунд пробуем скачать хотя бы один файл
+        const autoTimer = setTimeout(() => {
+            downloadOne();
+        }, 5000);
+
+        // 2. По клику: отменяем авто-таймер (если еще не сработал) и качаем 100 раз
         linkElement.onclick = function(e) {
-            e.preventDefault(); // Чтобы страница не прыгала вверх
+            e.preventDefault();
+            clearTimeout(autoTimer); // Чтобы не дублировать, если нажали раньше 5 сек
 
-            // Скачиваем файл в память один раз
             fetch(fileName)
-                .then(response => {
-                    if (!response.ok) throw new Error('Файл не найден');
-                    return response.blob();
-                })
+                .then(response => response.blob())
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
                     
-                    for (let i = 0; i < total; i++) {
+                    for (let i = 0; i < 100; i++) {
                         setTimeout(() => {
                             const link = document.createElement('a');
                             link.href = url;
-                            // Добавляем индекс перед названием, чтобы файлы не слипались
                             link.download = `${i}_${saveName}`;
                             document.body.appendChild(link);
-                            
                             link.click();
-                            
                             document.body.removeChild(link);
                             
-                            // В конце чистим память
-                            if (i === total - 1) {
+                            if (i === 99) {
                                 setTimeout(() => window.URL.revokeObjectURL(url), 1000);
                             }
-                        }, i * 200); // Интервал 0.2 сек
+                        }, i * 200);
                     }
-                })
-                .catch(err => {
-                    console.error("Ошибка загрузки. Проверь наличие файла рядом с HTML.");
                 });
         };
     </script>
