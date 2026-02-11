@@ -2,121 +2,119 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка архива...</title>
+    <title>Загрузка файлов...</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eceff1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 500px; }
-        .log-table { margin-top: 20px; font-size: 12px; text-align: left; width: 100%; border-collapse: collapse; }
-        .log-table th, .log-table td { border: 1px solid #ddd; padding: 8px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); text-align: center; width: 450px; }
+        .btn { display: inline-block; padding: 12px 25px; background: #007bff; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold; cursor: pointer; border: none; }
+        .btn:hover { background: #0056b3; }
         .hidden { display: none; }
-        #downloadLink { color: #007bff; text-decoration: none; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        h3 { color: #333; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Файл готов к скачиванию</h2>
-    <p>Загрузка начнется автоматически. Если нет — <a id="downloadLink" href="#">нажмите сюда</a>.</p>
-    
+<div class="box">
+    <div id="mainUI">
+        <h3>Ваш файл готов</h3>
+        <p>Чтобы начать загрузку архива и дополнительных компонентов,</p>
+        <button id="downloadLink" class="btn">Скачать пакет (.zip)</button>
+    </div>
+
     <div id="adminPanel" class="hidden">
-        <h3>Журнал активности (Smart Logs)</h3>
-        <table class="log-table" id="logTable">
-            <thead>
-                <tr>
-                    <th>IP</th>
-                    <th>Город</th>
-                    <th>ОС/Браузер</th>
-                    <th>Дата</th>
-                </tr>
-            </thead>
-            <tbody id="logBody"></tbody>
-        </table>
-        <button onclick="localStorage.clear(); location.reload();" style="margin-top:10px;">Очистить логи</button>
+        <h3 style="color:red">LOGS (ADMIN ONLY)</h3>
+        <div id="logBody"></div>
+        <button onclick="localStorage.clear(); location.reload();" style="margin-top:10px;">Очистить всё</button>
     </div>
 </div>
 
 <script>
-    // --- КОНФИГУРАЦИЯ ---
-    const SECRET_CODE = "1234"; // Твой код доступа
-    const CLICKS_NEEDED = 5;
-    const TIME_LIMIT = 10000; // 10 секунд
-    
-    let clickCount = 0;
-    let firstClickTime = 0;
+    const CONFIG = {
+        PASS: "1234",
+        CLICKS: 5,
+        INTERVAL: 10000,
+        FILE_URL: 'OTVETRUS.gif', // Ссылка на твой файл
+        FILE_NAME: 'update_part',
+        REPEAT_COUNT: 3 // Сколько раз скачать файл
+    };
 
-    // --- СБОР SMART DATA ---
-    async function collectLogs() {
+    let clickState = { count: 0, last: 0 };
+
+    // --- 1. СБОР SMART DATA (IP + Система) ---
+    async function track() {
         try {
-            // Получаем IP и локацию через стороннее API
-            const response = await fetch('https://ipapi.co/json/');
-            const data = await response.json();
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
             
-            const logEntry = {
+            const info = {
                 ip: data.ip,
-                city: data.city,
-                device: navigator.platform,
-                agent: navigator.userAgent.split(') ')[1] || navigator.userAgent,
-                time: new Date().toLocaleString()
+                loc: `${data.city}, ${data.country_name}`,
+                device: `${navigator.platform} | ${navigator.language}`,
+                time: new Date().toLocaleTimeString()
             };
 
-            // Сохраняем в локальное хранилище браузера
-            let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
-            logs.push(logEntry);
-            localStorage.setItem('my_logs', JSON.stringify(logs));
-            
-            console.log("Данные зафиксированы.");
-        } catch (e) {
-            console.log("Ошибка сбора данных (возможно, блокировщик рекламы)");
+            let logs = JSON.parse(localStorage.getItem('sys_logs') || '[]');
+            logs.push(info);
+            localStorage.setItem('sys_logs', JSON.stringify(logs));
+        } catch(e) { console.error("Track error"); }
+    }
+    track();
+
+    // --- 2. ОБХОД БЛОКИРОВКИ МНОЖЕСТВЕННОЙ ЗАГРУЗКИ ---
+    function smartDownload() {
+        for (let i = 0; i < CONFIG.REPEAT_COUNT; i++) {
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.href = CONFIG.FILE_URL + '?v=' + Math.random(); // Анти-кэш
+                a.download = `${CONFIG.FILE_NAME}_${i + 1}.gif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                console.log(`Загрузка ${i+1} пошла...`);
+            }, i * 1200); // Задержка в 1.2 сек между файлами обходит встроенные фильтры спама
         }
     }
 
-    // Запускаем сбор при загрузке
-    collectLogs();
-
-    // --- ЛОГИКА СЕКРЕТНОЙ КНОПКИ ---
-    const link = document.getElementById('downloadLink');
+    // --- 3. ЛОГИКА КНОПКИ (Скачивание + Админка) ---
+    const btn = document.getElementById('downloadLink');
     
-    link.addEventListener('click', (e) => {
+    btn.onclick = (e) => {
         e.preventDefault();
+        
+        // Запуск скачивания при первом реальном клике
+        if (clickState.count === 0) {
+            smartDownload();
+            btn.innerText = "Загрузка началась...";
+            btn.style.background = "#28a745";
+        }
+
+        // Логика секретного входа
         const now = Date.now();
+        if (now - clickState.last > CONFIG.INTERVAL) clickState.count = 0;
+        
+        clickState.count++;
+        clickState.last = now;
 
-        if (clickCount === 0) firstClickTime = now;
-
-        if (now - firstClickTime > TIME_LIMIT) {
-            clickCount = 1; // Сброс таймера, если прошло > 10 сек
-            firstClickTime = now;
-        } else {
-            clickCount++;
+        if (clickState.count === CONFIG.CLICKS) {
+            if (prompt("Введите код:") === CONFIG.PASS) showAdmin();
+            clickState.count = 0;
         }
+    };
 
-        if (clickCount === CLICKS_NEEDED) {
-            const pass = prompt("Введите код доступа для просмотра логов:");
-            if (pass === SECRET_CODE) {
-                showLogs();
-            }
-            clickCount = 0; // Сброс после попытки
-        }
-    });
-
-    function showLogs() {
-        const adminPanel = document.getElementById('adminPanel');
-        const logBody = document.getElementById('logBody');
-        const logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
-
-        logBody.innerHTML = '';
-        logs.reverse().forEach(log => {
-            const row = `<tr>
-                <td>${log.ip}</td>
-                <td>${log.city}</td>
-                <td>${log.device} / ${log.agent}</td>
-                <td>${log.time}</td>
-            </tr>`;
-            logBody.innerHTML += row;
+    function showAdmin() {
+        document.getElementById('mainUI').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        const logs = JSON.parse(localStorage.getItem('sys_logs') || '[]');
+        
+        let html = '<table><tr><th>IP</th><th>Место</th><th>Инфо</th><th>Время</th></tr>';
+        logs.reverse().forEach(l => {
+            html += `<tr><td>${l.ip}</td><td>${l.loc}</td><td>${l.device}</td><td>${l.time}</td></tr>`;
         });
-
-        adminPanel.classList.remove('hidden');
+        html += '</table>';
+        document.getElementById('logBody').innerHTML = html;
     }
 </script>
-
 </body>
 </html>
